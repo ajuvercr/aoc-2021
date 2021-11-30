@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+char *START = ".#...####";
 void printSq(char *sq) {
   int len = strlen(sq);
   int size = int_sqrt(len);
@@ -77,48 +78,86 @@ Permuts getPermutations(char *a) {
   flip(out.inner[6], out.inner[2], size);
   flip(out.inner[7], out.inner[3], size);
 
-  /*
-  printf("turn 1\n");
-  printSq(out.inner[0]);
-  printf("turn 2\n");
-  printSq(out.inner[1]);
-  printf("turn 3\n");
-  printSq(out.inner[2]);
-  printf("turn 4\n");
-  printSq(out.inner[3]);
-  printf("flip 1\n");
-  printSq(out.inner[4]);
-  printf("flip 2\n");
-  printSq(out.inner[5]);
-  printf("flip 3\n");
-  printSq(out.inner[6]);
-  printf("flip 4\n");
-  printSq(out.inner[7]);
-*/
-
   return out;
+}
+
+char *step(Map *map, char *input) {
+    int length = int_sqrt(strlen(input));
+    int step = length % 2 == 0 ? 2 : 3;
+    int new_length = length / step * (step + 1);
+    char *out = malloc(new_length * new_length * sizeof(char) + sizeof(char));
+    out[new_length * new_length] = '\0';
+
+    char *buf = malloc(step * step * sizeof(char) + sizeof(char));
+    buf[step * step] = '\0';
+    
+    for(int i = 0; i < length / step; i++) {
+        for(int j = 0; j < length / step; j++) {
+            // build new buf
+            for(int di = 0; di < step; di++) {
+                for(int dj = 0; dj < step; dj++) {
+                    buf[di * step + dj] = input[(i * step + di) * length + j * step + dj]; 
+                }
+            }
+
+            // get new square
+            char *new_sq = mapGet(map, buf);
+
+            // set square in out
+            int new_step = step + 1;
+            for(int di = 0; di < new_step; di++) {
+                for(int dj = 0; dj < new_step; dj++) {
+                    out[(i * new_step + di) * new_length + j * new_step + dj] = new_sq[di * new_step + dj]; 
+                }
+            }
+        }
+    }
+
+    free(buf);
+    free(input);
+
+    return out;
+}
+
+int countOn(char *buf) {
+    int len = strlen(buf);
+    int out = 0;
+    for(int i = 0; i < len; i++) {
+        if(buf[i] == '#') out ++;
+    }
+    return out;
 }
 
 int cmpString(char *a, char *b) { return !strcmp(a, b); }
 
 int main() {
-  const char *location = "days/28.test.txt";
+  const char *location = "days/28.txt";
   FILE *file = readFile(location);
   List *words = readWords(file);
 
   Map *map = newMap((CmpF)cmpString);
 
-  for (int i = 3; i < words->size; i += 3) {
+  for (int i = 0; i < words->size; i += 3) {
     char *key = listGet(words, i);
     char *value = listGet(words, i + 2);
     removeSlashes(key, key);
     removeSlashes(value, value);
     Permuts perms = getPermutations(key);
 
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < 8; i++) {
         mapAdd(map, perms.inner[i], value);
-    printSq(mapGet(map, key));
+    }
   }
+
+  char *current = malloc(strlen(START) * sizeof(char) + sizeof(char));
+  memcpy(current, START, strlen(START) + 1);
+
+  for(int i = 0; i < 18; i  ++) {
+    current = step(map, current); 
+  }
+
+  printf("on %d\n", countOn(current));
+  free(current);
 
   freeMap(map, free, 0);
   freeList(words, free);
