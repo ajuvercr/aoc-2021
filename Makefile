@@ -1,5 +1,6 @@
 CC ?= gcc
 DAY ?= $(shell date '+%d')
+FILE ?= ./input/$(DAY).txt
 TARGET_EXEC ?= $(DAY).out
 
 BUILD_DIR ?= ./build
@@ -22,7 +23,7 @@ $(BUILD_DIR)/%.o: %.c $(DEPS)
 
 run: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
-	$(BUILD_DIR)/$(TARGET_EXEC)
+	$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)
 
 clean:
 	$(RM) -r $(BUILD_DIR)
