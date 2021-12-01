@@ -2,11 +2,11 @@
 #include <stdio.h>
 
 void part1(const char *inputLocation) {
-    printf("part 1:\n");
+    printf("part 1: ");
 }
 
 void part2(const char *inputLocation) {
-    printf("part 2:\n");
+    printf("part 2: ");
 }
 
 int main(int argc, char *argv[]) {

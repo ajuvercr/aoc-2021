@@ -39,3 +39,13 @@ List *readWords(FILE *file) {
 
     return out;
 }
+
+List *readInts(FILE *file) {
+    List *out = newList();
+    long x = 0;
+    while(fscanf(file, "%ld", &x) > 0) {
+        listAdd(out, (int*)x);
+    }
+
+    return out;
+}

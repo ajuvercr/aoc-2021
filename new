@@ -2,5 +2,5 @@
 day=$(date '+%d')
 
 cp days/xx.c days/${day}.c
-wget https://adventofcode.com/2021/day/${day}/input -O input/${day}.txt
+curl -H "Cookie: session=$AOCTOKEN" https://adventofcode.com/2021/day/$(date '+%-d')/input > input/${day}.txt
 
