@@ -11,30 +11,27 @@ List *getInput(const char *inputLocation) {
 }
 
 void part1(const char *inputLocation) {
-  printf("part 1: ");
   List *ints = getInput(inputLocation);
   int count = 0;
-  for (int i = 1; i < ints->size; i++) {
-    long x = (long) listGet(ints, i-1);
-    long y = (long) listGet(ints, i);
-    if(x < y) count ++;
-  }
-  printf("%d\n", count);
+  long *longs = (long *)ints->list;
+
+  for (int i = 0; i < ints->size - 1; i++)
+    if (longs[i] < longs[i + 1])
+      count++;
+
+  printf("part 1: %d\n", count);
 }
 
 void part2(const char *inputLocation) {
-  printf("part 2: ");
   List *ints = getInput(inputLocation);
   int count = 0;
-  long preWindow = 1000000000000000;
-  for (int i = 0; i < ints->size-2; i++) {
-    long x = (long) listGet(ints, i);
-    long y = (long) listGet(ints, i+1);
-    long z = (long) listGet(ints, i+2);
-    if(preWindow < x + y + z) count ++;
-    preWindow = x + y + z;
-  }
-  printf("%d\n", count);
+  long *longs = (long *)ints->list;
+
+  for (int i = 0; i < ints->size - 3; i++)
+    if (longs[i] < longs[i + 3])
+      count++;
+
+  printf("part 2: %d\n", count);
 }
 
 int main(int argc, char *argv[]) {

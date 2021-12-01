@@ -2,6 +2,8 @@ CC ?= gcc
 DAY ?= $(shell date '+%d')
 FILE ?= ./input/$(DAY).txt
 TARGET_EXEC ?= $(DAY).out
+CFLAGS ?= -Wall -Werror -Wpedantic
+CC ?= clang
 
 BUILD_DIR ?= ./build
 LIB_DIR ?= ./lib
@@ -24,6 +26,10 @@ $(BUILD_DIR)/%.o: %.c $(DEPS)
 run: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
 	$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)
+
+bench: $(BUILD_DIR)/$(TARGET_EXEC)
+	@echo "-------------------------------------------------------------"
+	hyperfine "$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)"
 
 clean:
 	$(RM) -r $(BUILD_DIR)

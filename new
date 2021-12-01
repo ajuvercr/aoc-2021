@@ -1,6 +1,9 @@
 
 day=$(date '+%d')
 
-cp days/xx.c days/${day}.c
+if [ ! -f days/${day}.c ]; then
+    cp days/xx.c days/${day}.c
+fi
+
 curl -H "Cookie: session=$AOCTOKEN" https://adventofcode.com/2021/day/$(date '+%-d')/input > input/${day}.txt
 
