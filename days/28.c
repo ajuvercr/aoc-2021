@@ -132,7 +132,7 @@ int cmpString(char *a, char *b) { return !strcmp(a, b); }
 
 int main() {
   const char *location = "days/28.txt";
-  FILE *file = readFile(location);
+  FILE *file = openFile(location);
   List *words = readWords(file);
 
   Map *map = newMap((CmpF)cmpString);

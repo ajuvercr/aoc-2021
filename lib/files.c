@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 
-FILE *readFile(const char *filename) {
+FILE *openFile(const char *filename) {
     return fopen(filename, "r");
 }
 

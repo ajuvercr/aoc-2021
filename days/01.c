@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 List *getInput(const char *inputLocation) {
-  FILE *file = readFile(inputLocation);
+  FILE *file = openFile(inputLocation);
   List *out = readInts(file);
   fclose(file);
   return out;

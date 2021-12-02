@@ -1,5 +1,8 @@
-#include <stdlib.h>
+#include "../lib/files.h"
+#include "../lib/list.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void part1(const char *inputLocation) {
     printf("part 1: ");

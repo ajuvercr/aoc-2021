@@ -3,7 +3,7 @@
 
 #include "list.h"
 
-FILE *readFile(const char *filename);
+FILE *openFile(const char *filename);
 
 int readLine(FILE *file, char *buff);
 List *readLines(FILE *file);
