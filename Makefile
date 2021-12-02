@@ -1,4 +1,3 @@
-CC ?= gcc
 DAY ?= $(shell date '+%d')
 FILE ?= ./input/$(DAY).txt
 TARGET_EXEC ?= $(DAY).out
@@ -18,6 +17,7 @@ $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 
 # c source
 $(BUILD_DIR)/%.o: %.c $(DEPS)
+	@echo $(CC)
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 

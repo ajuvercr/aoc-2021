@@ -135,7 +135,7 @@ int main() {
   FILE *file = openFile(location);
   List *words = readWords(file);
 
-  Map *map = newMap((CmpF)cmpString);
+  Map *map = newMap((CmpF) cmpString);
 
   for (int i = 0; i < words->size; i += 3) {
     char *key = listGet(words, i);
