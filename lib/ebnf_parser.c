@@ -1,8 +1,8 @@
+#include "ebnf_parser.h"
+#include "map.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "ebnf_parser.h"
 
 void printRule(Rule *rule, int indent) {
   for (int i = 0; i < indent; i++)
@@ -29,6 +29,7 @@ void printRule(Rule *rule, int indent) {
 }
 
 char cursorGet(Cursor *cursor) { return cursor->buf[cursor->at]; }
+void cursorInc(Cursor *cursor) { cursor->at++; }
 char cursorPref(Cursor *cursor) {
   if (cursor->at > 0)
     return cursor->buf[cursor->at - 1];
@@ -47,7 +48,7 @@ int contWhite(Cursor *cursor) {
 
 int contLiteral(Cursor *cursor) {
   char current = cursorGet(cursor);
-  return current != '"' || cursorPref(cursor) == '\\';
+  return current != '\'' || cursorPref(cursor) == '\\';
 }
 
 int contSymbol(Cursor *cursor) {
@@ -79,7 +80,7 @@ Rule *CreateParser(Cursor *cursor) {
   trimWhite(cursor);
 
   if (!isReserved(cursor)) {
-    if (cursorGet(cursor) == '"') {
+    if (cursorGet(cursor) == '\'') {
       cursor->at++;
       rule->lit = parseWith(cursor, contLiteral);
       cursor->at++;
@@ -101,7 +102,7 @@ Rule *CreateParser(Cursor *cursor) {
   switch (current) {
   case '|':
     parent->type = Or;
-    cursor->at ++;
+    cursor->at++;
     break;
   default:
     parent->type = And;
@@ -127,4 +128,102 @@ void FreeRule(Rule *rule) {
   if (rule->beta)
     FreeRule(rule->beta);
   free(rule);
+}
+
+int matchLiteral(const char *toMatch, Cursor *cursor) {
+  int out = 0;
+  while (toMatch[out] == cursorGet(cursor)) {
+    if (toMatch[out] == '\0')
+      return out;
+    if (cursorGet(cursor) == '\0')
+      return -1;
+
+    cursorInc(cursor);
+    out++;
+  }
+  return -1;
+}
+
+void printParset(Parset *parset, const char *input) {
+    if(parset->type == Terminal) printf(" \"%.*s\" ", parset->matched[1] - parset->matched[0], input + parset->matched[0]);
+    else {
+        if (parset->symbol)
+            printf(" %s { ", parset->symbol);
+
+        printParset(parset->child, input);
+
+        if(parset->beta) printParset(parset->beta, input);
+
+        if(parset->symbol)
+            printf("}");
+    }
+}
+
+Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
+  int start = cursor->at;
+
+  switch (rule->type) {
+  case Lit: {
+    if (matchLiteral(rule->lit, cursor) >= 0) {
+      Parset *out = malloc(sizeof(Parset));
+      out->type = Terminal;
+      out->matched[0] = start;
+      out->matched[1] = cursor->at;
+      return out;
+    } else {
+      cursor->at = start;
+    }
+  } break;
+
+  case Sym: {
+    Rule *newRule = mapGet(rules, rule->symbol);
+    Parset *syn = parse(rules, newRule, cursor);
+    if (syn) {
+      Parset *out = malloc(sizeof(Parset));
+      out->type = NonTerminal;
+      out->symbol = rule->symbol;
+      out->matched[0] = start;
+      out->matched[1] = cursor->at;
+      out->child = out;
+      return out;
+    }
+  } break;
+
+  case Or: {
+    Parset *syn = parse(rules, rule->alpha, cursor);
+    if (!syn) {
+      cursor->at = start;
+      syn = parse(rules, rule->beta, cursor);
+    }
+    if (syn) {
+      Parset *out = malloc(sizeof(Parset));
+      out->type = NonTerminal;
+      out->matched[0] = start;
+      out->matched[1] = cursor->at;
+      out->child = syn;
+      return out;
+    }
+
+  } break;
+
+  case And: {
+    Parset *syn = parse(rules, rule->alpha, cursor);
+    if (syn) {
+      Parset *syn2 = parse(rules, rule->beta, cursor);
+      if (syn2) {
+        Parset *out = malloc(sizeof(Parset));
+        out->type = NonTerminal;
+        out->matched[0] = start;
+        out->matched[1] = cursor->at;
+        out->child = syn;
+        out->beta = syn2;
+        return out;
+      }
+    }
+  } break;
+  }
+
+  cursor->at = start;
+
+  return 0;
 }

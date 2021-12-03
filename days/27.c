@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define __LIST_START_SIZE 2
 #include "../lib/ebnf_parser.h"
 
@@ -11,32 +12,29 @@ int eqInt(int *a, int *b) {
   printf("a %d b %d\n", *a, *b);
   return *a == *b;
 }
-const char *lang = "\"some \\\"lit\" \"bla2\"";
+Cursor digit = {"'0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'", 0};
+Cursor number = {"digit number | ''", 0};
+Cursor addition = {"number '+' number", 0};
+Cursor subtraction = {"number '-' number", 0};
+Cursor term = {"addition | subtraction", 0};
+
+const char *input = "1 + 2";
+
+int invCmpStr(const char *v1, const char *v2) { return !strcmp(v1, v2); }
 int main() {
-  Cursor cursor = {lang, 0};
+  Map *rules = newMap((CmpF)invCmpStr);
+  mapAdd(rules, "digit", CreateParser(&digit));
+  mapAdd(rules, "number", CreateParser(&number));
+  mapAdd(rules, "addition", CreateParser(&addition));
+  mapAdd(rules, "subtraction", CreateParser(&subtraction));
+  mapAdd(rules, "term", CreateParser(&term));
 
-  Rule *rule = CreateParser(&cursor);
-  printf("type %d\n", rule->type);
-  printRule(rule, 0);
-  FreeRule(rule);
+  Cursor here = {input, 0}; 
+  printRule(mapGet(rules, "term"), 0);
+  Parset *parset = parse(rules, mapGet(rules, "term"), &here);
+  printf("HERE\n");
+  printParset(parset, input);
+  
 
-  int a = 1, b = 2, c = 3, d = 4, e = 5;
-
-  List *list = newList();
-  listAdd(list, &a);
-  listAdd(list, &b);
-  listAdd(list, &c);
-  printf("list size %d\n", list->size);
-
-  printf("list item %d\n", *(int *)listGet(list, 0));
-  printf("list %d > %d\n", b, *(int *)listGetWith(list, &b, (CmpF)cmpInt));
-
-  printf("cmp %p %p %p\n", eqInt, &a, &b);
-  Map *map = newMap((CmpF)eqInt);
-  printf("added %d\n", mapAdd(map, &a, &b));
-  printf("added %d\n", mapAdd(map, &b, &c));
-
-  int x = 42;
-  printf("map %d -> %d\n", a, *(int *)mapGet(map, &a));
   return 0;
 }

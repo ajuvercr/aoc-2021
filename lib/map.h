@@ -2,7 +2,7 @@
 
 #include "list.h"
 
-typedef void *key;
+typedef const void *key;
 typedef void *value;
 typedef int (*CmpF)(void *, void*);
 typedef struct Map {

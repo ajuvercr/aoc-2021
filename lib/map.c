@@ -24,9 +24,9 @@ void freeMap(Map *map, void (*freeKey)(key), void (*freeValue)()) {
 int mapCmp(void **v1, void **v2) { return (*(CmpF *)v2[2])(v1[0], v2[0]); }
 
 int mapAdd(Map *map, key key, value value) {
-  void *total[] = {key, value, (void *)&map->cmpf};
+  const void *total[] = {key, value, (void *)&map->cmpf};
   if (!listGetWith(map->list, total, (CmpF)mapCmp)) {
-    void **item = malloc(sizeof(void *) * 3);
+    const void **item = malloc(sizeof(void *) * 3);
     item[0] = key;
     item[1] = value;
     item[2] = (void *)&map->cmpf;
@@ -37,7 +37,7 @@ int mapAdd(Map *map, key key, value value) {
 }
 
 void *mapGet(Map *map, key key) {
-  void *total[3] = {key, 0, (void *)&map->cmpf};
+  const void *total[3] = {key, 0, (void *)&map->cmpf};
   void **item = (void **)listGetWith(map->list, total, (CmpF)mapCmp);
   if (item)
     return item[1];
