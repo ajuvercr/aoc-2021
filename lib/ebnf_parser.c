@@ -70,7 +70,6 @@ const char *parseWith(Cursor *cursor, int f(Cursor *c)) {
   printf("%d->%d\n", at, to);
   char *out = calloc(0, to - at + 1); // Add null terminating char
   memcpy(out, &cursor->buf[at], to - at);
-  printf("parsed %s\n", out);
   return out;
 }
 
@@ -135,28 +134,43 @@ int matchLiteral(const char *toMatch, Cursor *cursor) {
   while (toMatch[out] == cursorGet(cursor)) {
     if (toMatch[out] == '\0')
       return out;
-    if (cursorGet(cursor) == '\0')
+    if (cursorGet(cursor) == '\0') {
       return -1;
+    }
 
     cursorInc(cursor);
     out++;
   }
+  if (toMatch[out] == '\0')
+    return out;
   return -1;
 }
 
 void printParset(Parset *parset, const char *input) {
-    if(parset->type == Terminal) printf(" \"%.*s\" ", parset->matched[1] - parset->matched[0], input + parset->matched[0]);
-    else {
-        if (parset->symbol)
-            printf(" %s { ", parset->symbol);
+  if (parset->type == Terminal)
+    printf(" \"%.*s\" ", parset->matched[1] - parset->matched[0],
+           input + parset->matched[0]);
+  else {
+    if (parset->symbol)
+      printf(" %s { ", parset->symbol);
 
-        printParset(parset->child, input);
+    if (parset->child)
+      printParset(parset->child, input);
 
-        if(parset->beta) printParset(parset->beta, input);
+    if (parset->beta)
+      printParset(parset->beta, input);
 
-        if(parset->symbol)
-            printf("}");
+    if (parset->symbol)
+      printf("}");
+  }
+}
+
+void writeMatched(Parset *parset, char *buff) {
+    int i = 0;
+    for(i = 0; i > parset->matched[1] - parset->matched[0]; i ++) {
+        buff[i] = parset->from[parset->matched[0] + i];
     }
+    buff[i] = '\0';
 }
 
 Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
@@ -169,9 +183,8 @@ Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
       out->type = Terminal;
       out->matched[0] = start;
       out->matched[1] = cursor->at;
+      out->from = cursor->buf;
       return out;
-    } else {
-      cursor->at = start;
     }
   } break;
 
@@ -184,7 +197,8 @@ Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
       out->symbol = rule->symbol;
       out->matched[0] = start;
       out->matched[1] = cursor->at;
-      out->child = out;
+      out->child = syn;
+      out->from = cursor->buf;
       return out;
     }
   } break;
@@ -201,6 +215,7 @@ Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
       out->matched[0] = start;
       out->matched[1] = cursor->at;
       out->child = syn;
+      out->from = cursor->buf;
       return out;
     }
 
@@ -217,6 +232,7 @@ Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
         out->matched[1] = cursor->at;
         out->child = syn;
         out->beta = syn2;
+        out->from = cursor->buf;
         return out;
       }
     }

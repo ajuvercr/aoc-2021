@@ -29,6 +29,8 @@ struct Parset {
 
     Parset *child;
     Parset *beta;
+
+    const char *from;
 };
 
 Rule *CreateParser(Cursor *cursor);
@@ -41,4 +43,5 @@ const char *parseWith(Cursor *cursor, int f(Cursor *c));
 
 void printParset(Parset *, const char*);
 Parset *parse(Map *rules, Rule *rule, Cursor *);
+void writeMatched(Parset *, char *);
 

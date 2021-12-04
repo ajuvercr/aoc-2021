@@ -18,7 +18,7 @@ Cursor addition = {"number '+' number", 0};
 Cursor subtraction = {"number '-' number", 0};
 Cursor term = {"addition | subtraction", 0};
 
-const char *input = "1 + 2";
+const char *input = "12+2";
 
 int invCmpStr(const char *v1, const char *v2) { return !strcmp(v1, v2); }
 int main() {
@@ -30,11 +30,17 @@ int main() {
   mapAdd(rules, "term", CreateParser(&term));
 
   Cursor here = {input, 0}; 
-  printRule(mapGet(rules, "term"), 0);
   Parset *parset = parse(rules, mapGet(rules, "term"), &here);
-  printf("HERE\n");
   printParset(parset, input);
-  
+
+  char buff[256] = {'\0'};
+  Parset *current = parset->child->child;
+  printf("%s %p\n", current->symbol, (void*)current->beta);
+  while(current->beta) {
+    writeMatched(current, buff);
+    printf("%s", buff);
+    current = current->beta;
+  }
 
   return 0;
 }
