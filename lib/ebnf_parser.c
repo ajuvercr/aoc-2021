@@ -74,28 +74,40 @@ const char *parseWith(Cursor *cursor, int f(Cursor *c)) {
 }
 
 Rule *CreateParser(Cursor *cursor) {
-  Rule *rule = malloc(sizeof(Rule));
+  Rule *rule;
 
-  trimWhite(cursor);
+  if (cursorGet(cursor) == '(') {
+    cursor->at++;
+    trimWhite(cursor);
+    rule = CreateParser(cursor);
+  } else {
+    rule = malloc(sizeof(Rule));
 
-  if (!isReserved(cursor)) {
-    if (cursorGet(cursor) == '\'') {
-      cursor->at++;
-      rule->lit = parseWith(cursor, contLiteral);
-      cursor->at++;
-      rule->type = Lit;
-    } else {
-      rule->symbol = parseWith(cursor, contSymbol);
-      rule->type = Sym;
+    trimWhite(cursor);
+
+    if (!isReserved(cursor)) {
+      if (cursorGet(cursor) == '\'') {
+        cursor->at++;
+        rule->lit = parseWith(cursor, contLiteral);
+        cursor->at++;
+        rule->type = Lit;
+      } else {
+        rule->symbol = parseWith(cursor, contSymbol);
+        rule->type = Sym;
+      }
     }
   }
-
   trimWhite(cursor);
 
   char current = cursorGet(cursor);
-  if (current == '\0')
+  if (current == ')') {
+    cursor->at++;
+    return rule;
+  }
+  if (current == '\0' || current == ')')
     return rule;
 
+  // The rule didn't end, better find the rest!
   Rule *parent = malloc(sizeof(Rule));
 
   switch (current) {
@@ -131,6 +143,7 @@ void FreeRule(Rule *rule) {
 
 int matchLiteral(const char *toMatch, Cursor *cursor) {
   int out = 0;
+  printf("to match %s\n", toMatch);
   while (toMatch[out] == cursorGet(cursor)) {
     if (toMatch[out] == '\0')
       return out;
@@ -166,15 +179,17 @@ void printParset(Parset *parset, const char *input) {
 }
 
 void writeMatched(Parset *parset, char *buff) {
-    int i = 0;
-    for(i = 0; i > parset->matched[1] - parset->matched[0]; i ++) {
-        buff[i] = parset->from[parset->matched[0] + i];
-    }
-    buff[i] = '\0';
+  int i = 0;
+  for (i = 0; i > parset->matched[1] - parset->matched[0]; i++) {
+    buff[i] = parset->from[parset->matched[0] + i];
+  }
+  buff[i] = '\0';
 }
 
 Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
   int start = cursor->at;
+
+  printf("at %c\n", cursorGet(cursor));
 
   switch (rule->type) {
   case Lit: {
