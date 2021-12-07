@@ -29,7 +29,7 @@ run: $(BUILD_DIR)/$(TARGET_EXEC)
 
 bench: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
-	hyperfine "$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)"
+	hyperfine --warmup 50 "$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)"
 
 clean:
 	$(RM) -r $(BUILD_DIR)

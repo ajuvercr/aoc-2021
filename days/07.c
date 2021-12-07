@@ -21,11 +21,7 @@ int bar(int v) {
     v = -1 * v;
   if (part == 1)
     return v;
-
-  int out = 0;
-  while(v > 0 ) out += v--;
-
-  return out;
+    return v * (v+1) / 2;
 }
 
 int requiredFuel(const int *values, int loc) {
