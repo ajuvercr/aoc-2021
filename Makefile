@@ -1,7 +1,7 @@
 DAY ?= $(shell date '+%d')
 FILE ?= ./input/$(DAY).txt
 TARGET_EXEC ?= $(DAY).out
-CFLAGS ?= -Wall -Werror -Wpedantic
+CFLAGS ?= -Wall -Wpedantic
 CC ?= clang
 
 BUILD_DIR ?= ./build
