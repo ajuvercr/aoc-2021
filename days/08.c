@@ -4,8 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define X(x) ((x) - 'a')
-#define Y(x) (__builtin_ctz(x))
+int X(char x) { return x - 'a'; }
+int Y(char x) {
+  int i = 0;
+  while (!(x & 1)) {
+    x = x >> 1;
+    i++;
+  }
+  return i;
+}
 
 typedef struct {
   char input[10][8];
@@ -33,12 +40,13 @@ List *getInput(const char *loc) {
 
     listAdd(out, inp);
   }
+  fclose(f);
 
   return out;
 }
 
-char LEDS[10] = {
-    //  aaaaaa   bbbbbb   cccccc   dddddd   eeeeee   ffffff   gggggg
+unsigned char LEDS[10] = {
+    // aaa   bbbbbb   cccccc   dddddd   eeeeee   ffffff   gggggg
     1 << 0 | 1 << 1 | 1 << 2 | 0 << 3 | 1 << 4 | 1 << 5 | 1 << 6, // 0
     0 << 0 | 0 << 1 | 1 << 2 | 0 << 3 | 0 << 4 | 1 << 5 | 0 << 6, // 1
     1 << 0 | 0 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 0 << 5 | 1 << 6, // 2
@@ -58,24 +66,22 @@ char tochar(char *thing, int l) {
   return out;
 }
 
-char *binString(unsigned char n) {
-  static char bin[1024];
-  static int at = 0;
-  int x;
+char allIn(char a, char b) { return (a & b) == b; }
 
-  for (x = 0; x < 8; x++) {
-    bin[x + at] = n & 0x1 ? '1' : '0';
-    n >>= 1;
+int toDigit(char digit[8], char mapping[8]) {
+  unsigned char target = 0;
+  for (int i = 0; i < 8; i++) {
+    if (digit[i] == '\0')
+      break;
+    target |= 1 << X(mapping[X(digit[i])]);
   }
-  bin[at + 8] = '\0';
 
-  char *out = bin + at;
-  at += 9;
-  return out;
-}
-char allIn(char a, char b) {
-  printf("%s has all %s == %d\n", binString(a), binString(b), (a & b) == b);
-  return (a & b) == b;
+  for (int i = 0; i < 10; i++) {
+    if (LEDS[i] == target)
+      return i;
+  }
+
+  return -1;
 }
 
 int determineValue(char input[10][8], char output[4][8]) {
@@ -110,13 +116,6 @@ int determineValue(char input[10][8], char output[4][8]) {
     }
   }
 
-  printf("2 %s 3 %s 4 %s 7 %s 5 %s %s %s 6 %s %s %s\n", binString(s2[0]),
-         binString(s3[0]), binString(s4[0]), binString(s7[0]), binString(s5[0]),
-         binString(s5[1]), binString(s5[2]), binString(s6[0]), binString(s6[1]),
-         binString(s6[2]));
-
-  printf("first 1: %d\n", Y(4));
-
   // input character output what it is irl
   char mapping[9] = {0};
 
@@ -125,20 +124,32 @@ int determineValue(char input[10][8], char output[4][8]) {
   mapping[Y(ma)] = 'a';
   int c6 = allIn(s6[0], s2[0]) ? (allIn(s6[1], s2[0]) ? 2 : 1) : 0;
 
-  printf("step 3: %d %s\n", c6, binString(s7[0] ^ s6[c6]));
   mc = s7[0] ^ s6[c6];
   mapping[Y(mc)] = 'c';
 
   mf = s2[0] ^ mc;
   mapping[Y(mf)] = 'f';
 
-  int c3 = allIn(s5[0], s2[0]) ? 0 : (allIn(s5[1], s2[0]) ? 1 : 2); 
+  int c3 = allIn(s5[0], s2[0]) ? 0 : (allIn(s5[1], s2[0]) ? 1 : 2);
   char bore = (~(1 << 7)) ^ s5[c3];
 
+  mb = s4[0] & bore;
+  mapping[Y(mb)] = 'b';
 
-  printf("mapping '%s'\n", mapping);
+  me = bore ^ mb;
+  mapping[Y(me)] = 'e';
 
-  return 0;
+  md = (s4[0] ^ s2[0]) ^ mb;
+  mapping[Y(md)] = 'd';
+
+  mg = s7[0] ^ (s4[0] | s3[0] | bore);
+  mapping[Y(mg)] = 'g';
+
+  int out =  (1000 * toDigit(output[0], mapping) +
+          100 * toDigit(output[1], mapping) + 10 * toDigit(output[2], mapping) +
+          toDigit(output[3], mapping));
+
+  return out;
 }
 
 void part1(const char *inputLocation) {
@@ -154,13 +165,19 @@ void part1(const char *inputLocation) {
     }
   }
   printf("part 1: %d\n", out);
+  freeList(inps, free);
 }
 
 void part2(const char *inputLocation) {
   List *inps = getInput(inputLocation);
   Input **l = (Input **)inps->list;
-  determineValue(l[0]->input, l[0]->output);
-  printf("part 2: ");
+  long output = 0;
+  for (int i = 0; i < inps->size; i++) {
+    int o = determineValue(l[i]->input, l[i]->output);
+    output += o;
+  }
+  printf("part 2: %ld\n", output);
+  freeList(inps, free);
 }
 
 int main(int argc, char *argv[]) {
