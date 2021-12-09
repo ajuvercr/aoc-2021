@@ -65,9 +65,83 @@ void part1(const char *inputLocation) {
   printf("part 1: %d\n", out);
 }
 
-void part2(const char *inputLocation) { 
+int getMaxIndex(int *counts, int at) {
+  int maxI = 0;
+  for (int i = 1; i < at; i++)
+    if (counts[i] > counts[maxI])
+      maxI = i;
+  return maxI;
+}
 
-    printf("part 2: "); 
+void part2(const char *inputLocation) {
+
+  Input inp = parseInput(inputLocation);
+  List *minPoints = findLowPoints(&inp);
+  int at = -1;
+  for (int i = 0; i < minPoints->size; i += 2) {
+    inp.inner[(long)listGet(minPoints, i)][(long)listGet(minPoints, i + 1)] =
+        at--;
+  }
+
+  int changed = 1;
+  while (changed) {
+    changed = 0;
+
+    int mi, Mi, mj, Mj;
+    for (long i = 0; i < SIZE; i++) {
+      for (long j = 0; j < SIZE; j++) {
+        int v = inp.inner[i][j];
+
+        if (v < 0 || v == 9)
+          continue;
+        mi = i - 1;
+        mj = j - 1;
+        Mi = i + 1;
+        Mj = j + 1;
+
+        int basin = 0;
+        if (mi >= 0 && inp.inner[mi][j] < 0)
+          basin = inp.inner[mi][j];
+        if (Mi < SIZE && inp.inner[Mi][j] < 0)
+          basin = inp.inner[Mi][j];
+        if (mj >= 0 && inp.inner[i][mj] < 0)
+          basin = inp.inner[i][mj];
+        if (Mj < SIZE && inp.inner[i][Mj] < 0)
+          basin = inp.inner[i][Mj];
+
+        if (basin) {
+          inp.inner[i][j] = basin;
+          changed = 1;
+        }
+      }
+    }
+  }
+
+  at = -1 * at;
+  int counts[at];
+  for (int i = 0; i < at; i++)
+    counts[i] = 0;
+
+  for (int i = 0; i < SIZE; i++) {
+    for (int j = 0; j < SIZE; j++) {
+      int v = inp.inner[i][j];
+      if (v < 0)
+        counts[-1 * v]++;
+    }
+  }
+
+  int maxI = getMaxIndex(counts, at);
+  int v1 = counts[maxI];
+  counts[maxI] = 0;
+
+  maxI = getMaxIndex(counts, at);
+  int v2 = counts[maxI];
+  counts[maxI] = 0;
+
+  maxI = getMaxIndex(counts, at);
+  int v3 = counts[maxI];
+
+  printf("part 2: %d\n", v1 * v2 * v3);
 }
 
 int main(int argc, char *argv[]) {
