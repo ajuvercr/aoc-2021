@@ -143,7 +143,8 @@ void FreeRule(Rule *rule) {
 
 int matchLiteral(const char *toMatch, Cursor *cursor) {
   int out = 0;
-  printf("to match %s\n", toMatch);
+  if(toMatch[out] == '\0') return 0;
+  printf("to match %s with %c\n", toMatch, cursorGet(cursor));
   while (toMatch[out] == cursorGet(cursor)) {
     if (toMatch[out] == '\0')
       return out;
@@ -189,10 +190,10 @@ void writeMatched(Parset *parset, char *buff) {
 Parset *parse(Map *rules, Rule *rule, Cursor *cursor) {
   int start = cursor->at;
 
-  printf("at %c\n", cursorGet(cursor));
 
   switch (rule->type) {
   case Lit: {
+//  printf("at %c\n", cursorGet(cursor));
     if (matchLiteral(rule->lit, cursor) >= 0) {
       Parset *out = malloc(sizeof(Parset));
       out->type = Terminal;
