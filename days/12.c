@@ -58,6 +58,7 @@ List *buildMap(const char *loc) {
     map[end_i][start_i] = 1;
   }
 
+  freeList(lines, 0);
   fclose(f);
   return out;
 }
@@ -96,6 +97,7 @@ void part1(const char *inputLocation) {
   dfs(ll, 0, done, 0, &succesful);
 
   printf("part 1: %d\n", succesful);
+  freeList(caves, 0);
 }
 
 void part2(const char *inputLocation) {
@@ -106,6 +108,7 @@ void part2(const char *inputLocation) {
   dfs(ll, 0, done, 1, &succesful);
 
   printf("part 2: %d\n", succesful);
+  freeList(caves, 0);
 }
 
 int main(int argc, char *argv[]) {
