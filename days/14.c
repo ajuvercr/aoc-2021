@@ -65,8 +65,8 @@ unsigned long calcOutput(unsigned long pairs[SIZE], int last_char) {
   numbers[last_char - 'A'] = 1;
 
   for (int i = 0, idx = INDICES[i]; i < ind_c; idx = INDICES[++i]) {
-      unsigned int a = (0x1f & idx);
-      numbers[a] += pairs[idx];
+    unsigned int a = (0x1f & idx);
+    numbers[a] += pairs[idx];
   }
 
   for (int i = 0; i < 256; i++) {
@@ -101,10 +101,14 @@ void part2(const char *inputLocation) {
   char map[SIZE] = {0};
   char last_char = parseInput(inputLocation, pairs1, map);
 
-  for (int i = 0; i < 40; i++) {
+  for (int i = 0; i < 40; i += 2) {
     expand(map, pairs1, pairs2);
-    memmove(pairs1, pairs2, sizeof(long) * SIZE);
-    memset(pairs2, 0, sizeof(long) * SIZE);
+    for (int i = 0, idx = INDICES[i]; i < ind_c; idx = INDICES[++i])
+      pairs1[idx] = 0;
+
+    expand(map, pairs2, pairs1);
+    for (int i = 0, idx = INDICES[i]; i < ind_c; idx = INDICES[++i])
+      pairs2[idx] = 0;
   }
   printf("part 2: %ld\n", calcOutput(pairs1, last_char));
 }
