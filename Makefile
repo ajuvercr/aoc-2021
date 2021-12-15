@@ -1,5 +1,6 @@
 DAY ?= $(shell date '+%d')
 FILE ?= ./input/$(DAY).txt
+TEST_FILE ?= ./input/$(DAY).test.txt
 TARGET_EXEC ?= $(DAY).out
 CFLAGS ?= -Wall -Wpedantic
 CC ?= clang
@@ -26,6 +27,10 @@ $(BUILD_DIR)/%.o: %.c $(DEPS)
 run: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
 	$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)
+
+test: $(BUILD_DIR)/$(TARGET_EXEC)
+	@echo "-------------------------------------------------------------"
+	$(BUILD_DIR)/$(TARGET_EXEC) $(TEST_FILE)
 
 bench: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
