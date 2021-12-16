@@ -7,7 +7,7 @@
 typedef struct Packet {
   int version;
   int type;
-  long value;
+  unsigned long value;
   struct Packet *children;
   int child_count;
 } Packet;
@@ -17,8 +17,8 @@ typedef struct Packet {
     strcpy(t, v);                                                              \
     break;
 
-int binToInt(const char *bin, int size) {
-  int out = 0;
+unsigned long binToInt(const char *bin, int size) {
+  unsigned long out = 0;
 
   for (int i = 0; i < size; i++) {
     out <<= 1;
@@ -143,51 +143,51 @@ void parseInput(const char *inputLocation, Packet *p) {
   free(t);
 }
 
-long interpret(Packet *p) {
-  switch (p->type) {
+unsigned long interpret(Packet p) {
+  switch (p.type) {
   case 0: {
-    long out = 0;
-    for (int i = 0; i < p->child_count; i++)
-      out += interpret(&p->children[i]);
+    unsigned long out = 0;
+    for (int i = 0; i < p.child_count; i++)
+      out += interpret(p.children[i]);
     return out;
   } break;
   case 1: {
-    long out = 1;
-    for (int i = 0; i < p->child_count; i++)
-      out *= interpret(&p->children[i]);
+    unsigned long out = 1;
+    for (int i = 0; i < p.child_count; i++)
+      out *= interpret(p.children[i]);
     return out;
   } break;
   case 2: {
-    long out = -1;
-    for (int i = 0; i < p->child_count; i++) {
-      long v = interpret(&p->children[i]);
-      if (out == -1 || v < out)
+    unsigned long out = ~0;
+    for (int i = 0; i < p.child_count; i++) {
+      unsigned long v = interpret(p.children[i]);
+      if (v < out)
         out = v;
     }
     return out;
   }
   case 3: {
-    long out = -1;
-    for (int i = 0; i < p->child_count; i++) {
-      long v = interpret(&p->children[i]);
+    unsigned long out = 0;
+    for (int i = 0; i < p.child_count; i++) {
+      unsigned long v = interpret(p.children[i]);
       if (v > out)
         out = v;
     }
     return out;
   }
-  case 4:
-    return p->value;
-  case 5:
-    return interpret(&p->children[0]) > interpret(&p->children[1]);
-  case 6:
-    return interpret(&p->children[0]) < interpret(&p->children[1]);
-  case 7:
-    return interpret(&p->children[0]) == interpret(&p->children[1]);
-  default:
-    printf("unkown type %d\n", p->type);
-  }
+case 4:
+  return p.value;
+case 5:
+  return interpret(p.children[0]) > interpret(p.children[1]);
+case 6:
+  return interpret(p.children[0]) < interpret(p.children[1]);
+case 7:
+  return interpret(p.children[0]) == interpret(p.children[1]);
+default:
+  printf("unkown type %d\n", p.type);
+}
 
-  return 0;
+return 0;
 }
 
 void part1(const char *inputLocation) {
@@ -198,30 +198,27 @@ void part1(const char *inputLocation) {
 
 void testAll();
 void part2(const char *inputLocation) {
-    testAll();
   Packet p = {0};
   parseInput(inputLocation, &p);
-  // too low 197445795016
-  // too low 197445829014
-  printf("part 2: %ld\n", interpret(&p));
+  printf("part 2: %ld\n", interpret(p));
 }
 
-void test(char *inp, long v) {
-    Packet p = {0};
-    char *t = spread(inp);
-    parsePacket(t, &p);
-    printf("%ld == %ld\n", interpret(&p), v);
+void test(char *inp, unsigned long v) {
+  Packet p = {0};
+  char *t = spread(inp);
+  parsePacket(t, &p);
+  printf("%ld == %ld\n", interpret(p), v);
 }
 
 void testAll() {
-  test("C200B40A82", 3); 
-  test("04005AC33890", 54); 
-  test("880086C3E88112", 7); 
-  test("CE00C43D881120", 9); 
-  test("D8005AC2A8F0", 1); 
-  test("F600BC2D8F", 0); 
-  test("9C005AC2F8F0", 0); 
-  test("9C0141080250320F1802104A08", 1); 
+  test("C200B40A82", 3);
+  test("04005AC33890", 54);
+  test("880086C3E88112", 7);
+  test("CE00C43D881120", 9);
+  test("D8005AC2A8F0", 1);
+  test("F600BC2D8F", 0);
+  test("9C005AC2F8F0", 0);
+  test("9C0141080250320F1802104A08", 1);
 }
 
 int main(int argc, char *argv[]) {
