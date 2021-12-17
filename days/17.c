@@ -21,10 +21,7 @@ void parseInput(const char *loc) {
 }
 
 int calcHeight(int dy) {
-  int out = 0;
-  while (dy)
-    out += dy--;
-  return out;
+    return ( dy * dy + dy) / 2;
 }
 
 int hits(int dx, int dy) {
@@ -36,10 +33,8 @@ int hits(int dx, int dy) {
     oy = y;
     x += dx;
     y += dy;
-    if (dx > 0)
+    if (dx)
       dx--;
-    if (dx < 0)
-      dx++;
     dy--;
   }
   return ox >= X[0] && oy <= Y[1];
