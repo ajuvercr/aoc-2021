@@ -11,6 +11,7 @@
 typedef int Orientation;
 
 typedef struct Beacon {
+  long s;
   int x;
   int y;
   int z;
@@ -31,7 +32,7 @@ int cmp_delta(Beacon *a, Beacon *b) {
 struct Scanner {
   Beacon beacons[32];
   int b_count;
-  Delta deltas[32 * 32];
+  Delta deltas[32 * 16];
   int d_count;
   Orientation orientation;
   int used;
@@ -109,13 +110,14 @@ void parseInput(const char *loc, Scanner scanners[S_SIZE]) {
       l++;
     }
   }
+  freeList(lines, free);
 }
 
 void setDeltas(Scanner *scanner) {
   int a = 0;
   for (int i = 0; i < scanner->b_count; i++) {
     Beacon l = scanner->beacons[i];
-    for (int j = 0; j < scanner->b_count; j++) {
+    for (int j = i + 1; j < scanner->b_count; j++) {
       if (i == j)
         continue;
       Beacon k = scanner->beacons[j];
@@ -204,11 +206,15 @@ int addDeltas(Scanner *root, Scanner *scanner) {
         if (!(points & a)) {
           points = points | a;
           overlap++;
+          if (overlap >= 12)
+            break;
         }
 
         if (!(points & b)) {
           points = points | b;
           overlap++;
+          if (overlap >= 12)
+            break;
         }
       }
     }
@@ -245,16 +251,18 @@ void part1(const char *inputLocation) {
   scanners[0].orientation = 0;
   scanners[0].used = 1;
 
-  for (int k = 0; k < S_SIZE; k++) {
+  int indecis[S_SIZE];
+  int at = 0;
+  indecis[at++] = 0;
+
+  for (int i = 0; i < S_SIZE; i++) {
+    Scanner *root = &scanners[indecis[i]];
+
     for (int j = 0; j < S_SIZE; j++) {
-      if (scanners[j].used)
+      if (scanners[j].used == 1)
         continue;
-      for (int i = 0; i < S_SIZE; i++) {
-        if (!scanners[i].used)
-          continue;
-        if (addDeltas(&scanners[i], &scanners[j]))
-          break;
-      }
+      if (addDeltas(root, &scanners[j]))
+        indecis[at++] = j;
     }
   }
 
