@@ -23,6 +23,7 @@ typedef struct {
   Beacon *inner;
   int a;
   int b;
+  int size;
 } Delta;
 
 int cmp_delta(Beacon *a, Beacon *b) {
@@ -126,6 +127,7 @@ void setDeltas(Scanner *scanner) {
       d[0].x = l.x - k.x;
       d[0].y = l.y - k.y;
       d[0].z = l.z - k.z;
+      scanner->deltas[a].size = abs(d[0].x) + abs(d[0].y) + abs(d[0].z);
       for (int i = 1; i < 25; i++) {
         d[i].x = d[0].x;
         d[i].y = d[0].y;
@@ -141,12 +143,28 @@ void setDeltas(Scanner *scanner) {
   scanner->d_count = a;
 }
 
-Delta *contains(Scanner *scanner, Beacon *beacon) {
+int filterSize(Scanner *scanner, int size, int buffer[1024]) {
+  int out = 0;
   Delta *deltas = scanner->deltas;
 
-  for (int i = 0; i < scanner->d_count; i++)
+  for (int i = 0; i < scanner->d_count; i++) {
+    if (deltas[i].size == size) {
+      buffer[out++] = i;
+    }
+  }
+
+  return out;
+}
+
+Delta *contains(Scanner *scanner, Beacon *beacon, int count, int buffer[1024]) {
+  Delta *deltas = scanner->deltas;
+
+  for (int j = 0; j < count; j++) {
+    int i = buffer[j];
+
     if (cmp_delta(&deltas[i].inner[scanner->orientation], beacon))
       return &deltas[i];
+  }
 
   return 0;
 }
@@ -177,18 +195,23 @@ void maybeAddPoint(Scanner *scanner, Beacon *beacon) {
 }
 
 int addDeltas(Scanner *root, Scanner *scanner) {
-  for (Orientation o = 0; o < 25; o++) {
-    int ox, oy, oz;
-    int overlap = 0;
-    long points = 0;
-    for (int i = 0; i < scanner->d_count; i++) {
-      Delta *orig = &scanner->deltas[i];
+  int buffer[1024];
+  int orientation = -1;
+  int overlaps[25] = {0};
+  int points[25] = {0};
+  Beacon centers[25] = {{0}};
+
+  for (int i = 0; i < scanner->d_count; i++) {
+    Delta *orig = &scanner->deltas[i];
+
+    int count = filterSize(root, orig->size, buffer);
+
+    for (int o = 0; o < 25; o++) {
       Beacon *d = &orig->inner[o];
 
-      Delta *found = contains(root, d);
+      Delta *found = contains(root, d, count, buffer);
       if (found) {
-
-        if (!overlap) {
+        if (!overlaps[o]) {
           Beacon *oa = &root->beacons[found->a];
           Beacon *ca = &scanner->beacons[orig->b];
 
@@ -196,43 +219,49 @@ int addDeltas(Scanner *root, Scanner *scanner) {
           int y = ca->y;
           int z = ca->z;
           rotateXYZ(o, &x, &y, &z);
-          ox = root->ox + oa->x - x;
-          oy = root->oy + oa->y - y;
-          oz = root->oz + oa->z - z;
+          centers[o].x = root->ox + oa->x - x;
+          centers[o].y = root->oy + oa->y - y;
+          centers[o].z = root->oz + oa->z - z;
         }
 
         long a = 1 << orig->a;
         long b = 1 << orig->b;
-        if (!(points & a)) {
-          points = points | a;
-          overlap++;
-          if (overlap >= 12)
+        if (!(points[o] & a)) {
+          points[o] = points[o] | a;
+          overlaps[o]++;
+          if (overlaps[o] >= 12) {
+            orientation = o;
             break;
+          }
         }
 
-        if (!(points & b)) {
-          points = points | b;
-          overlap++;
-          if (overlap >= 12)
+        if (!(points[o] & b)) {
+          points[o] = points[o] | b;
+          overlaps[o]++;
+          if (overlaps[o] >= 12) {
+            orientation = o;
             break;
+          }
         }
       }
     }
+    if (orientation > -1)
+      break;
+  }
 
-    if (overlap >= 12) { // found match!
-      scanner->ox = ox;
-      scanner->oy = oy;
-      scanner->oz = oz;
-      scanner->orientation = o;
-      scanner->used = 1;
+  if (orientation > -1) { // found match!
+    scanner->ox = centers[orientation].x;
+    scanner->oy = centers[orientation].y;
+    scanner->oz = centers[orientation].z;
+    scanner->orientation = orientation;
+    scanner->used = 1;
 
-      for (int i = 0; i < scanner->b_count; i++) {
-        rotateBeacon(o, scanner->beacons + i);
-        maybeAddPoint(scanner, scanner->beacons + i);
-      }
-
-      return 1;
+    for (int i = 0; i < scanner->b_count; i++) {
+      rotateBeacon(orientation, scanner->beacons + i);
+      maybeAddPoint(scanner, scanner->beacons + i);
     }
+
+    return 1;
   }
   return 0;
 }
