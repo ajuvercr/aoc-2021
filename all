@@ -1,0 +1,11 @@
+#!/bin/bash
+function testAll() {
+    today=$(date '+%-d')
+    echo $today
+    for day in $(seq 1 $today); do
+        echo $day
+        DAY=$day make time
+    done
+}
+
+time testAll
