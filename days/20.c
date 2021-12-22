@@ -94,16 +94,27 @@ int countOn(int index) {
   return out;
 }
 
-void print(int index) {
+#ifdef ANIM
+#include "../lib/colors.h"
+#include <unistd.h>
+void print(int index, int ret) {
+  if (ret)
+    moveTermUp(size);
   for (int i = 0; i < size; i++) {
     printf("%s\n", image[index][i]);
   }
+  usleep(500 * 1000);
 }
+#else
+void print(int index, int ret) { return; }
+#endif
 
 void part1(const char *inputLocation) {
   parseInput(inputLocation);
   enhanceImage(0);
+  print(1, 0);
   enhanceImage(1);
+  print(0, 1);
   printf("part 1: %d\n", countOn(0));
 }
 
@@ -111,6 +122,7 @@ void part2(const char *inputLocation) {
   parseInput(inputLocation);
   for (int i = 0; i < 50; i++) {
     enhanceImage(i % 2);
+    print((i + 1) % 2, i > 0);
   }
   printf("part 2: %d\n", countOn(0));
 }

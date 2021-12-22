@@ -36,6 +36,10 @@ bench: $(BUILD_DIR)/$(TARGET_EXEC)
 	@echo "-------------------------------------------------------------"
 	hyperfine --warmup 50 "$(BUILD_DIR)/$(TARGET_EXEC) $(FILE)"
 
+time: $(BUILD_DIR)/$(TARGET_EXEC)
+	@echo "-------------------------------------------------------------"
+	time $(BUILD_DIR)/$(TARGET_EXEC) $(FILE)
+
 clean:
 	$(RM) -r $(BUILD_DIR)
 

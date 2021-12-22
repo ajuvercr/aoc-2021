@@ -64,28 +64,31 @@ void parseCubes(const char *loc) {
 void part1(const char *inputLocation) {
   parseCubes(inputLocation);
   long number = 0;
-  State powers[50][50][50] = {{{OFF}}};
+  State powers[101][101][101] = {{{OFF}}};
 
-  printf("cubc: %d\n", cubc);
   for (int k = 0; k < cubc; k++) {
-    printf("i: %d\n", k);
     Cube *c = cubes + k;
+    printf("state %d\n", c->state);
 
-
-    if (abs(c->x.start) >= 50) {
-      printf("HERE\n");
+    if (abs(c->x.start) >= 50)
       break;
-    }
 
-    for (int x = c->x.start; x <= c->x.end; x++) {
-      for (int y = c->y.start; y <= c->y.end; y++) {
-        for (int z = c->z.start; z <= c->z.end; z++) {
-          number += c->state - powers[x][y][z];
+    for (int x = c->x.start + 50; x <= c->x.end + 50; x++) {
+      for (int y = c->y.start + 50; y <= c->y.end + 50; y++) {
+        for (int z = c->z.start + 50; z <= c->z.end + 50; z++) {
           powers[x][y][z] = c->state;
         }
       }
     }
   }
+    for (int x = 0; x <= 100; x++) {
+      for (int y = 0; y <= 100; y++) {
+        for (int z = 0; z <= 100; z++) {
+          number += powers[x][y][z];
+        }
+      }
+    }
+
   printf("part 1: %ld\n", number);
 }
 

@@ -1,10 +1,12 @@
 
-day=$(date '+%d')
+# day=$(date '+%d')
+day=${day:-$(date '+%-d')}
+echo getting $day
 
 if [ ! -f days/${day}.c ]; then
     cp days/xx.c days/${day}.c
     git add days/${day}.c
 fi
 
-curl -H "Cookie: session=$AOCTOKEN" https://adventofcode.com/2021/day/$(date '+%-d')/input > input/${day}.txt
+curl -H "Cookie: session=$AOCTOKEN" https://adventofcode.com/2021/day/$day/input > input/${day}.txt
 
