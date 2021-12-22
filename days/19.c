@@ -11,7 +11,6 @@
 typedef int Orientation;
 
 typedef struct Beacon {
-  long s;
   int x;
   int y;
   int z;
@@ -73,8 +72,12 @@ void rotateXYZ(Orientation o, int *xp, int *yp, int *zp) {
   mul(xp, yp, zp, C[c]);
 }
 
-void rotateBeacon(Orientation o, Beacon *b) {
-  rotateXYZ(o, &b->x, &b->y, &b->z);
+
+
+Beacon rotateBeacon(Orientation o, Beacon *i) {
+    Beacon b = { i->x, i->y, i->z};
+  rotateXYZ(o, &b.x, &b.y, &b.z);
+  return b;
 }
 
 void parseBeacon(char *line, Beacon *beacon) {
@@ -147,11 +150,9 @@ int filterSize(Scanner *scanner, int size, int buffer[1024]) {
   int out = 0;
   Delta *deltas = scanner->deltas;
 
-  for (int i = 0; i < scanner->d_count; i++) {
-    if (deltas[i].size == size) {
+  for (int i = 0; i < scanner->d_count; i++)
+    if (deltas[i].size == size)
       buffer[out++] = i;
-    }
-  }
 
   return out;
 }
@@ -159,12 +160,9 @@ int filterSize(Scanner *scanner, int size, int buffer[1024]) {
 Delta *contains(Scanner *scanner, Beacon *beacon, int count, int buffer[1024]) {
   Delta *deltas = scanner->deltas;
 
-  for (int j = 0; j < count; j++) {
-    int i = buffer[j];
-
-    if (cmp_delta(&deltas[i].inner[scanner->orientation], beacon))
-      return &deltas[i];
-  }
+  for (int j = 0; j < count; j++)
+    if (cmp_delta(&deltas[buffer[j]].inner[scanner->orientation], beacon))
+      return &deltas[buffer[j]];
 
   return 0;
 }
@@ -173,11 +171,6 @@ Beacon BEACONS[2048];
 int BC = 0;
 
 void maybeAddPoint(Scanner *scanner, Beacon *beacon) {
-  if (BC >= 2048) {
-    printf("NOPE\n");
-    exit(1);
-  }
-
   int x = scanner->ox + beacon->x;
   int y = scanner->oy + beacon->y;
   int z = scanner->oz + beacon->z;
@@ -194,7 +187,7 @@ void maybeAddPoint(Scanner *scanner, Beacon *beacon) {
   BC++;
 }
 
-int addDeltas(Scanner *root, Scanner *scanner) {
+int tryAlign(Scanner *root, Scanner *scanner) {
   int buffer[1024];
   int orientation = -1;
   int overlaps[25] = {0};
@@ -215,13 +208,17 @@ int addDeltas(Scanner *root, Scanner *scanner) {
           Beacon *oa = &root->beacons[found->a];
           Beacon *ca = &scanner->beacons[orig->b];
 
-          int x = ca->x;
+          centers[o] = rotateBeacon(o, ca);
+          centers[o].x += -root->ox -oa->x;
+          centers[o].y += -root->oy-oa->y;
+          centers[o].x += -root->ox  -oa->z;
+          /* int x = ca->x;
           int y = ca->y;
           int z = ca->z;
           rotateXYZ(o, &x, &y, &z);
           centers[o].x = root->ox + oa->x - x;
           centers[o].y = root->oy + oa->y - y;
-          centers[o].z = root->oz + oa->z - z;
+          centers[o].z = root->oz + oa->z - z; */
         }
 
         long a = 1 << orig->a;
@@ -257,7 +254,7 @@ int addDeltas(Scanner *root, Scanner *scanner) {
     scanner->used = 1;
 
     for (int i = 0; i < scanner->b_count; i++) {
-      rotateBeacon(orientation, scanner->beacons + i);
+      scanner->beacons[i] = rotateBeacon(orientation, scanner->beacons + i);
       maybeAddPoint(scanner, scanner->beacons + i);
     }
 
@@ -290,7 +287,7 @@ void part1(const char *inputLocation) {
     for (int j = 0; j < S_SIZE; j++) {
       if (scanners[j].used == 1)
         continue;
-      if (addDeltas(root, &scanners[j]))
+      if (tryAlign(root, &scanners[j]))
         indecis[at++] = j;
     }
   }
@@ -298,15 +295,9 @@ void part1(const char *inputLocation) {
   int maxDist = 0;
   for (int i = 0; i < S_SIZE; i++) {
     for (int j = 0; j < S_SIZE; j++) {
-      int dx = scanners[i].ox - scanners[j].ox;
-      int dy = scanners[i].oy - scanners[j].oy;
-      int dz = scanners[i].oz - scanners[j].oz;
-      if (dx < 0)
-        dx = -1 * dx;
-      if (dy < 0)
-        dy = -1 * dy;
-      if (dz < 0)
-        dz = -1 * dz;
+      int dx = abs(scanners[i].ox - scanners[j].ox);
+      int dy = abs(scanners[i].oy - scanners[j].oy);
+      int dz = abs(scanners[i].oz - scanners[j].oz);
       int dist = dx + dy + dz;
       if (dist > maxDist)
         maxDist = dist;
