@@ -71,7 +71,12 @@ void part1(const char *inputLocation) {
 
   for (int k = 0; k < cubc; k++) {
     Cube *c = cubes + k;
+<<<<<<< Updated upstream
     if (labs(c->x.start) >= 50)
+=======
+
+    if (abs(c->x.start) >= 50)
+>>>>>>> Stashed changes
       break;
 
     for (int x = c->x.start + 50; x <= c->x.end + 50; x++) {

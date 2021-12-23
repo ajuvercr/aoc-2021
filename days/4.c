@@ -1,57 +1,50 @@
 #include "../lib/files.h"
 #include "../lib/list.h"
+#include "../lib/map.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int **malloc_2d_array(int r, int c) {
-  int len = sizeof(int *) * r + sizeof(int) * c * r;
-  int **arr = malloc(len);
-  int *ptr = (int *)(arr + r);
-  for (int i = 0; i < r; i++)
-    arr[i] = (ptr + c * i);
-  return arr;
-}
+typedef int intPair[2];
 
-void print(int **sq) {
+typedef struct {
+  int rows[5];
+  int columns[5];
+  Map *map;
+  int total;
+} Bingo;
 
+int intCmp(long a, long b) { return a == b; }
+
+Bingo *newBoard() {
+  Bingo *out = malloc(sizeof(Bingo));
   for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 5; j++) {
-      printf("%d ", sq[i][j]);
-    }
-    printf("\n");
+    out->rows[i] = 0;
+    out->columns[i] = 0;
   }
-    printf("\n");
-}
-int handleInput(int **sq, int input) {
-  for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 5; j++) {
-      if (sq[i][j] == input) {
-        sq[i][j] = -1;
-        int row = 1, col = 1;
-        for (int k = 0; k < 5; k++) {
-          row = row && (sq[i][k] < 0);
-          col = col && (sq[k][j] < 0);
-        }
-        if (row || col) {
-          return 1;
-        }
-      }
-    }
-  }
-  return 0;
-}
-
-
-int getUnchecked(int **sq) {
-  int out = 0;
-  for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 5; j++) {
-      if (sq[i][j] > 0)
-        out += sq[i][j];
-    }
-  }
+  out->total = 0;
+  out->map = newMap((CmpF)intCmp);
   return out;
+}
+
+void freeBingo(Bingo *bingo) {
+  freeMap(bingo->map, 0, 0);
+  free(bingo);
+}
+
+int handleInput(Bingo *board, int input) {
+    long a = (long) mapGet(board->map, (void *) (long) input);
+    if(!a) return 0;
+
+    if(a == -1) a = 0;
+
+    int at[2] = {(int) (a), (int) (a >> 32)};
+
+    board->total -= input;
+    board->rows[at[0]] ++;
+    board->columns[at[1]] ++;
+
+    return board->rows[at[0]] == 5 || board->columns[at[1]] == 5;
 }
 
 void part1(const char *inputLocation) {
@@ -68,32 +61,42 @@ void part1(const char *inputLocation) {
   List *sqrs = newList();
   int n = 0;
   while (fscanf(file, "%d", &n) > 0) {
-    int **sq = malloc_2d_array(5, 5);
-    listAdd(sqrs, sq);
-    sq[0][0] = n;
+    Bingo *board = newBoard();
 
-    for (int i = 0; i < 5; i++) {
-      for (int j = 0; j < 5; j++) {
+    listAdd(sqrs, board);
+
+    long x = -1;
+    board->total += n;
+    mapAdd(board->map, (void *)(long)n, (void *)x);
+
+    for (long i = 0; i < 5; i++) {
+      for (long j = 0; j < 5; j++) {
         if (i == 0 && j == 0)
           continue;
+
         fscanf(file, "%d", &n);
-        sq[i][j] = n;
+
+        long v = (i | (j << 32));
+
+        board->total += n;
+        mapAdd(board->map, (void *)(long)n, (void *)v);
       }
     }
   }
 
   long *list = (long *)inputs->list;
-  int ***rsqrs = (int ***)sqrs->list;
+  Bingo **rsqrs = (Bingo **)sqrs->list;
   int first = 1;
   long lastInput = -1;
-  int** lastSq = 0;
+  Bingo *lastSq = 0;
   for (int i = 0; i < inputs->size; i++) {
     long input = list[i];
 
     for (int j = 0; j < sqrs->size; j++) {
       if (rsqrs[j] && handleInput(rsqrs[j], input)) {
-        if (first)
-          printf("part 1: %ld\n", getUnchecked(rsqrs[j]) * input);
+        if (first) {
+          printf("part 1: %ld\n", rsqrs[j]->total * input);
+        }
         first = 0;
         lastInput = input;
         lastSq = rsqrs[j];
@@ -101,7 +104,7 @@ void part1(const char *inputLocation) {
       }
     }
   }
-  printf("part 2: %ld\n", getUnchecked(lastSq) * lastInput);
+  printf("part 2: %ld\n", lastSq->total * lastInput);
 }
 
 void part2(const char *inputLocation) { printf("part 2: "); }
