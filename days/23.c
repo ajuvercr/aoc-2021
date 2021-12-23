@@ -15,12 +15,11 @@ typedef struct Loc {
   int y;
   Amphi type;
 } Loc;
-Coord POS[15] = {{1, 1},  {2, 1},  {4, 1}, {6, 1}, {8, 1},
-                 {10, 1}, {11, 1}, {3, 2}, {5, 2}, {7, 2},
-                 {9, 2},  {3, 3},  {5, 3}, {7, 3}, {9, 3}};
+Coord POS[23] = {{1, 1},  {2, 1}, {4, 1}, {6, 1}, {8, 1}, {10, 1},
+                 {11, 1}, {3, 2}, {5, 2}, {7, 2}, {9, 2}, {3, 3},
+                 {5, 3},  {7, 3}, {9, 3}, {3, 4}, {5, 4}, {7, 4},
+                 {9, 4},  {3, 5}, {5, 5}, {7, 5}, {9, 5}};
 
-// 12564 too low
-// 15416 too high
 char input[5][14] = {{0}};
 
 void parseInput(const char *inputLocation, Loc poses[8]) {
@@ -170,7 +169,7 @@ int finished(Loc amphis[8]) {
   return 1;
 }
 
-int step(Loc amphis[8], int current, int best) {
+int step(Loc amphis[8], Loc *depths[4][4], int current, int best) {
   if (finished(amphis)) {
     print(amphis);
     return current;
@@ -180,24 +179,66 @@ int step(Loc amphis[8], int current, int best) {
     Coord orig = {amphis[i].x, amphis[i].y};
     if (atHome(amphis[i], amphis))
       continue;
-    for (int t = 0; t < 15; t++) {
-      if (validMove(amphis[i], POS[t], amphis)) {
-        int ncurrent = current + cost(orig, POS[t], amphis[i].type);
-        if (ncurrent >= best)
-          continue;
-        amphis[i].x = POS[t].x;
-        amphis[i].y = POS[t].y;
-        int c = step(amphis, ncurrent, best);
-        if (c < best) {
-          best = c;
-          printf("best %d cost %d \n", best,
-                 cost(orig, POS[t], amphis[i].type));
-          amphis[i].x = orig.x;
-          amphis[i].y = orig.y;
-          print(amphis);
-        }
+
+    if (amphis[i].y == 1) {
+      // amphis is at top row, let's try go to correct shaft
+      Amphi ty = amphis[i].type;
+      Loc **shaft = depths[ty];
+      int i = 0;
+      while (shaft[i]) {
+        if (shaft[i]->type != ty)
+          break;
+        i++;
+      }
+      if (shaft[i])
+        continue;
+
+      Coord target = {ty * 2 + 3, i + 2};
+      int ncurrent = current + cost(orig, target, amphis[i].type);
+      if (ncurrent >= best)
+        continue;
+
+      amphis[i].x = target.x;
+      amphis[i].y = target.y;
+      shaft[i] = &amphis[i];
+
+      print(amphis);
+
+      int c = step(amphis, depths, ncurrent, best);
+      if (c < best) {
+        printf("Best %d -> %d\n", best, c);
+        best = c;
         amphis[i].x = orig.x;
         amphis[i].y = orig.y;
+        print(amphis);
+      }
+
+      amphis[i].x = orig.x;
+      amphis[i].y = orig.y;
+      depths[ty][i] = 0;
+    } else {
+      for (int t = 0; t < 7; t++) {
+        if (validMove(amphis[i], POS[t], amphis)) {
+          int ncurrent = current + cost(orig, POS[t], amphis[i].type);
+          if (ncurrent >= best)
+            continue;
+          depths[(amphis[i].x - 3) / 2][amphis[i].y - 2] = 0;
+          amphis[i].x = POS[t].x;
+          amphis[i].y = POS[t].y;
+          print(amphis);
+          int c = step(amphis, depths, ncurrent, best);
+          if (c < best) {
+            best = c;
+            printf("best %d cost %d \n", best,
+                   cost(orig, POS[t], amphis[i].type));
+            amphis[i].x = orig.x;
+            amphis[i].y = orig.y;
+            print(amphis);
+          }
+          amphis[i].x = orig.x;
+          amphis[i].y = orig.y;
+          depths[(amphis[i].x - 3) / 2][amphis[i].y - 2] = &amphis[i];
+        }
       }
     }
   }
@@ -210,8 +251,12 @@ void part1(const char *inputLocation) {
   parseInput(inputLocation, poses);
   for (int i = 0; i < 8; i++)
     printf("(%d,%d) %d\n", poses[i].x, poses[i].y, poses[i].type);
+  Loc *depths[4][4] = {{0}};
+  for (int i = 0; i < 8; i++) {
+    depths[(poses[i].x - 3) / 2][poses[i].y - 2] = &poses[i];
+  }
   print(poses);
-  printf("part 1: %d", step(poses, 0, 1000000));
+  printf("part 1: %d", step(poses, depths, 0, 1000000));
 }
 
 void part2(const char *inputLocation) {
