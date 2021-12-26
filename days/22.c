@@ -10,8 +10,8 @@ typedef int State;
 #define NEG -1
 
 typedef struct {
-  long start;
-  long end;
+  int start;
+  int end;
 } Range;
 
 typedef struct {
@@ -24,7 +24,12 @@ typedef struct {
 Range parseRange(FILE *f) {
   char buff[2];
   Range out;
-  fscanf(f, "%ld%c%c%ld", &out.start, buff, &buff[1], &out.end);
+  fscanf(f, "%d%c%c%d", &out.start, buff, &buff[1], &out.end);
+  if (out.end < out.start) {
+    int z = out.end;
+    out.end = out.start;
+    out.start = z;
+  }
   return out;
 }
 
@@ -62,6 +67,7 @@ void parseCubes(const char *loc) {
     parseCube(f, &cubes[cubc++]);
     cont = getc(f) == '\n';
   }
+  cubc--;
 }
 
 void part1(const char *inputLocation) {
@@ -71,12 +77,7 @@ void part1(const char *inputLocation) {
 
   for (int k = 0; k < cubc; k++) {
     Cube *c = cubes + k;
-<<<<<<< Updated upstream
     if (labs(c->x.start) >= 50)
-=======
-
-    if (abs(c->x.start) >= 50)
->>>>>>> Stashed changes
       break;
 
     for (int x = c->x.start + 50; x <= c->x.end + 50; x++) {
@@ -105,9 +106,11 @@ struct Holder {
   Holder *next;
 };
 
-Holder holders[420 * 422 * 420];
+#define HOLDERC 420 * 422 * 100
+#define INTERC 420 * 422 * 100
+Holder holders[HOLDERC];
 int holder_c = 0;
-Cube intersections[420 * 422];
+Cube intersections[INTERC];
 int inter_c = 0;
 
 int _min(int x, int y) { return x < y ? x : y; }
@@ -122,25 +125,40 @@ Cube *interset(Cube *a, Cube *b) {
   Range x = intersectRange(&a->x, &b->x);
   Range y = intersectRange(&a->y, &b->y);
   Range z = intersectRange(&a->z, &b->z);
-  if (x.start >= x.end || y.start >= y.end || z.start >= z.end) {
+  if (x.start > x.end || y.start > y.end || z.start > z.end) {
     return 0;
+  }
+  if (inter_c == INTERC) {
+    printf("nope\n");
+    exit(1);
   }
 
   Cube *out = &intersections[inter_c++];
   out->x = x;
   out->y = y;
   out->z = z;
-  out->state = NEG;
+  out->state = -1 * a->state;
   return out;
 }
+long delta(Range r) { return ((long)r.end) - ((long)r.start) + 1; }
 
 long volume(Cube *cube) {
-  long out = cube->state * (cube->x.end - cube->x.start + 1) *
-             (cube->y.end - cube->y.start + 1) *
-             (cube->z.end - cube->z.start + 1);
+  return ((long)cube->state) * delta(cube->x) * delta(cube->y) * delta(cube->z);
+  long out = (long)cube->state * (long)(cube->x.end - cube->x.start + 1) *
+             (long)(cube->y.end - cube->y.start + 1) *
+             (long)(cube->z.end - cube->z.start + 1);
   return out;
 }
 
+Holder *nHolder() {
+  if (holder_c == HOLDERC) {
+    printf("NOpe holder\n");
+    exit(1);
+  }
+  return &holders[holder_c++];
+}
+
+// test : 2758514936282235
 void part2(const char *inputLocation) {
   cubc = 0;
   parseCubes(inputLocation);
@@ -149,25 +167,25 @@ void part2(const char *inputLocation) {
 
   for (int i = 0; i < cubc; i++) {
     Cube *newCube = &cubes[i];
-    for (int j = 0; j < i; j++) {
-      Cube *oldCube = &cubes[j];
-      if (oldCube->state == OFF)
-        continue;
+    Holder *current = start;
+    while (current) {
+      Cube *intersection = interset(current->c, newCube);
 
-      Cube *intersection = interset(oldCube, newCube);
       if (intersection) {
-        Holder *nextHolder = &holders[holder_c++];
-        nextHolder->c = intersection;
-        nextHolder->next = start;
-        start = nextHolder;
+        Holder *n = nHolder();
+        n->next = start;
+        n->c = intersection;
+        start = n;
       }
+
+      current = current->next;
     }
 
     if (newCube->state == ON) {
-      Holder *nextHolder = &holders[holder_c++];
-      nextHolder->c = newCube;
-      nextHolder->next = start;
-      start = nextHolder;
+      Holder *n = nHolder();
+      n->next = start;
+      n->c = newCube;
+      start = n;
     }
   }
 
@@ -178,7 +196,7 @@ void part2(const char *inputLocation) {
     current = current->next;
   }
 
-  printf("part 2: %d %d %d %ld\n", cubc, holder_c, inter_c, total);
+  printf("part 2: %ld\n", total);
 }
 
 int main(int argc, char *argv[]) {
