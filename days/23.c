@@ -3,26 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-typedef enum { A, B, C, D } Amphi;
+typedef enum { A, B, C, D, E } Amphi;
 
-typedef struct Coord {
-  int x;
-  int y;
-} Coord;
+int shaftSize = 2;
+Amphi row[7] = {E};
 
-typedef struct Loc {
-  int x;
-  int y;
-  Amphi type;
-} Loc;
-Coord POS[23] = {{1, 1},  {2, 1}, {4, 1}, {6, 1}, {8, 1}, {10, 1},
-                 {11, 1}, {3, 2}, {5, 2}, {7, 2}, {9, 2}, {3, 3},
-                 {5, 3},  {7, 3}, {9, 3}, {3, 4}, {5, 4}, {7, 4},
-                 {9, 4},  {3, 5}, {5, 5}, {7, 5}, {9, 5}};
-
-char input[5][14] = {{0}};
-
-void parseInput(const char *inputLocation, Loc poses[8]) {
+void parseInput(const char *inputLocation, Amphi shafts[4][5]) {
+  char input[5][14] = {{0}};
   FILE *f = openFile(inputLocation);
   fread(input[0], 1, 14, f);
   input[0][13] = '\0';
@@ -37,213 +24,127 @@ void parseInput(const char *inputLocation, Loc poses[8]) {
   fclose(f);
 
   int j = 0;
-  for (int i = 0; i < 15; i++) {
-    Coord test = POS[i];
-    char c = input[test.y][test.x];
-    Loc *l = &poses[j];
-    int good = 0;
-    if (c == 'A') {
-      good = 1;
-      l->type = A;
-    }
-    if (c == 'B') {
-      good = 1;
-      l->type = B;
-    }
-    if (c == 'C') {
-      good = 1;
-      l->type = C;
-    }
-
-    if (c == 'D') {
-      good = 1;
-      l->type = D;
-    }
-
-    if (good) {
-      l->x = test.x;
-      l->y = test.y;
-      j++;
-    }
+  for (int i = 0; i < 4; i++) {
+    shafts[i][0] = 2;
+    shafts[i][1] = input[2][i * 2 + 3] - 'A';
+    shafts[i][2] = input[3][i * 2 + 3] - 'A';
   }
 }
 
-void print(Loc poses[8]) {
-  for (int i = 0; i < 8; i++)
-    input[poses[i].y][poses[i].x] = 'A' + poses[i].type;
-  for (int i = 0; i < 5; i++) {
-    printf("%s\n", input[i]);
+void print(Amphi row[7], Amphi shafts[4][5]) {
+  printf("############\n");
+  printf("#%c%cE%cE%cE%cE%c%c#\n", row[0], row[1], row[2], row[3], row[4],
+         row[5], row[6]);
+  for (int i = 1; i <= shaftSize; i++) {
+    printf(" #%c#%c#%c#%c#\n", shafts[i][0], shafts[i][1], shafts[i][2],
+           shafts[i][3]);
   }
-  for (int i = 0; i < 8; i++)
-    input[poses[i].y][poses[i].x] = '.';
+  printf(" #########\n");
 }
 
-int correctPlace(int x, int y, int type) {
-  if (y == 1)
-    return 0;
+int shaftToRow(int s) { return 2 + 2 * s; }
 
-  if (type == A)
-    return x == 3;
-  if (type == B)
-    return x == 5;
-  if (type == C)
-    return x == 7;
-  if (type == D)
-    return x == 9;
-  printf("NOPE %d\n", type);
-  return 0;
+int shaftReady(int a, Amphi shafts[4][5]) {
+  for (int i = 1; i <= shafts[a][0]; i++) {
+    if (shafts[a][i] != i && shafts[a][i] != E)
+      return 0;
+  }
+  return 1;
 }
 
-int atHome(Loc amphi, Loc others[8]) {
-  if (!correctPlace(amphi.x, amphi.y, amphi.type))
-    return 0;
-  if (amphi.y == 3)
+int finised(Amphi shafts[4][5]) {
+  for (int i = 0; i < 4; i++) {
+    if (shafts[i][0] != shaftSize)
+      return 0;
+    if (!shaftReady(i, shafts))
+      return 0;
+  }
+  return 1;
+}
+
+long cost(Amphi x) {
+  switch (x) {
+  case A:
     return 1;
+  case B:
+    return 10;
+  case C:
+    return 100;
+  case D:
+    return 1000;
+  default:
+    return 0;
+  }
+}
 
-  for (int i = 0; i < 8; i++) {
-    Loc o = others[i];
-    if (o.type != amphi.type)
+long step(Amphi row[7], Amphi shafts[4][5], long best) {
+  if (finised(shafts))
+    return best;
+
+  for (int i = 0; i < 7; i++) {
+    Amphi x = row[i];
+    if (x == E)
       continue;
-    if (o.x == amphi.x && o.y == 3)
-      return 1;
-  }
-  return 0;
-}
-
-int validMove(Loc source, Coord target, Loc others[8]) {
-  if (source.y == target.y || source.x == target.x)
-    return 0;
-  if (source.y != 1 && target.y != 1)
-    return 0;
-
-  for (int i = 0; i < 8; i++) {
-    Loc inter = others[i];
-    if (inter.x == target.x && inter.y == target.y)
-      return 0;
-  }
-
-  if (source.y == 3) {
-    for (int i = 0; i < 8; i++) {
-      Loc inter = others[i];
-      if (inter.x == source.x && inter.y == 2)
-        return 0;
-    }
-  }
-
-  for (int i = 0; i < 8; i++) {
-    Loc inter = others[i];
-    if (1 == inter.y && source.x < inter.x && target.x > inter.x)
-      return 0;
-    if (1 == inter.y && source.x > inter.x && target.x < inter.x)
-      return 0;
-  }
-  if (target.y != 1) {
-    if (!correctPlace(target.x, target.y, source.type))
-      return 0;
-    if (target.y == 3)
-      return 1;
-
-    for (int i = 0; i < 8; i++) {
-      if (others[i].type == source.type && others[i].y == 3 &&
-          others[i].x == target.x)
-        return 1;
-    }
-
-    return 0;
-  }
-
-  return 1;
-}
-
-int cost(Coord source, Coord target, Amphi type) {
-  int mult = type == A ? 1 : type == B ? 10 : type == C ? 100 : 1000;
-  return mult * (abs(source.x - target.x) + abs(source.y - target.y));
-}
-
-int finished(Loc amphis[8]) {
-  for (int i = 0; i < 8; i++) {
-    Loc l = amphis[i];
-    if (!correctPlace(l.x, l.y, l.type))
-      return 0;
-  }
-  return 1;
-}
-
-int step(Loc amphis[8], Loc *depths[4][4], int current, int best) {
-  if (finished(amphis)) {
-    print(amphis);
-    return current;
-  }
-
-  for (int i = 0; i < 8; i++) {
-    Coord orig = {amphis[i].x, amphis[i].y};
-    if (atHome(amphis[i], amphis))
+    if (!shaftReady(x, shafts))
       continue;
 
-    if (amphis[i].y == 1) {
-      // amphis is at top row, let's try go to correct shaft
-      Amphi ty = amphis[i].type;
-      Loc **shaft = depths[ty];
-      int i = 0;
-      while (shaft[i]) {
-        if (shaft[i]->type != ty)
-          break;
-        i++;
-      }
-      if (shaft[i])
+    int cont = 1;
+    int t = shaftToRow(x);
+    for (int j = t; j < i; j++)
+      cont = cont && row[j] == E;
+
+    for (int j = i + 1; j <= t; j++)
+      cont = cont && row[j] == E;
+    if (!cont)
+      continue;
+
+    // Found valid move!! Let's move
+
+    // what distance?
+    long dd = labs(i - t) + shaftSize - (long)shafts[x][0];
+
+    row[i] = E;
+    shafts[x][shafts[x][0]] = x;
+    shafts[x][0]++;
+
+    long try = step(row, shafts, best + dd * cost(x));
+    if (try != -1 && try < best)
+      best = try;
+
+    row[i] = x;
+    shafts[x][0] --;
+    shafts[x][shafts[x][0]] = E;
+  }
+
+  for (int i = 0; i < 4; i++) {
+    if (shaftReady(i, shafts))
+      continue;
+
+    int ri = shaftToRow(i);
+    Amphi x = shafts[i][shafts[i][0]];
+    for (int j = ri - 1; j >= -1; j -= 2) {
+      if (j == -1)
+        j = 0;
+
+      if (row[j] != E)
         continue;
+      long dd = labs(i - shaftToRow(i)) + shaftSize - (long)shafts[x][0];
 
-      Coord target = {ty * 2 + 3, i + 2};
-      int ncurrent = current + cost(orig, target, amphis[i].type);
-      if (ncurrent >= best)
-        continue;
+      shafts[i][0]--;
+      shafts[i][shafts[i][0]] = E;
+      row[j] = x;
 
-      amphis[i].x = target.x;
-      amphis[i].y = target.y;
-      shaft[i] = &amphis[i];
+      long try = step(row, shafts, best + dd * cost(x));
+      if (try != -1 && try < best)
+        best = try;
 
-      print(amphis);
-
-      int c = step(amphis, depths, ncurrent, best);
-      if (c < best) {
-        printf("Best %d -> %d\n", best, c);
-        best = c;
-        amphis[i].x = orig.x;
-        amphis[i].y = orig.y;
-        print(amphis);
-      }
-
-      amphis[i].x = orig.x;
-      amphis[i].y = orig.y;
-      depths[ty][i] = 0;
-    } else {
-      for (int t = 0; t < 7; t++) {
-        if (validMove(amphis[i], POS[t], amphis)) {
-          int ncurrent = current + cost(orig, POS[t], amphis[i].type);
-          if (ncurrent >= best)
-            continue;
-          depths[(amphis[i].x - 3) / 2][amphis[i].y - 2] = 0;
-          amphis[i].x = POS[t].x;
-          amphis[i].y = POS[t].y;
-          print(amphis);
-          int c = step(amphis, depths, ncurrent, best);
-          if (c < best) {
-            best = c;
-            printf("best %d cost %d \n", best,
-                   cost(orig, POS[t], amphis[i].type));
-            amphis[i].x = orig.x;
-            amphis[i].y = orig.y;
-            print(amphis);
-          }
-          amphis[i].x = orig.x;
-          amphis[i].y = orig.y;
-          depths[(amphis[i].x - 3) / 2][amphis[i].y - 2] = &amphis[i];
-        }
-      }
+      row[j] = E;
+      shafts[i][shafts[i][0]] = x;
+      shafts[i][0]++;
     }
   }
 
-  return best;
+  return -1;
 }
 
 void part1(const char *inputLocation) {
