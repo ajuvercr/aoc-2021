@@ -24,7 +24,6 @@ typedef struct {
   int inst_c;
   long regs[4];
   long *input;
-  int inp[14];
 } Prog;
 
 int parseInst(FILE *f, Inst *inst) {
@@ -67,13 +66,7 @@ int parseInst(FILE *f, Inst *inst) {
 Prog parseProg(FILE *f) {
   Prog out;
   out.inst_c = 0;
-  int *inps = out.inp;
   while (parseInst(f, &out.instrs[out.inst_c])) {
-    if (out.instrs[out.inst_c].ty == Inp) {
-      *inps = out.inst_c;
-      inps++;
-    }
-
     out.inst_c++;
   }
 
@@ -92,7 +85,6 @@ long retS(Prog *prog, Sym sym) { return prog->regs[sym - 1]; }
 void set(Prog *prog, Sym sym, long v) { prog->regs[sym - 1] = v; }
 
 void apply(Prog *prog, Inst inst) {
-
   switch (inst.ty) {
   case Inp:
     set(prog, inst.alpha, *prog->input);
@@ -116,43 +108,39 @@ void apply(Prog *prog, Inst inst) {
   }
 }
 
-void runProg(Prog *prog, int from) {
-  printf("starting at %d\n", from);
+int runProg(Prog *prog, int from) {
   for (int i = from; i < prog->inst_c; i++) {
     Inst inst = prog->instrs[i];
     if (inst.ty == Inp)
-      return;
+      return i;
     apply(prog, inst);
   }
+  return prog->inst_c;
 }
 
-int tryDigit(Prog *prog, int currentDigit, long digits[14]) {
-  if (currentDigit == 14)
-    return 1;
-  printf("current digit %d start at %d\n", currentDigit,
-         prog->inp[currentDigit]);
-  long regs[4];
-  for (int i = 0; i < 4; i++)
-    regs[i] = prog->regs[i];
+void maybeAddOption(long v, long options[1024], int *s) {
+  for (int i = 0; i < *s; i++)
+    if (options[i] == v)
+      return;
+  options[*s] = v;
+  *s += 1;
+}
 
-  for (long i = 9; i > 0; i--) {
-    for (int i = 0; i < 4; i++)
-      prog->regs[i] = regs[i];
+int doSegment(Prog *prog, int start, long options[4][1024], int option_s[4]) {
+  int d = 0;
+  long regs[4] = {prog->regs[0], prog->regs[1], prog->regs[2], prog->regs[3]};
+  for (long i = 0; i < 10; i++) {
+    long inps[] = {i, 0, 0};
+    for (int j = 0; j < 4; j++)
+      prog->regs[j] = regs[i];
 
-    prog->input = &i;
-    apply(prog, prog->instrs[prog->inp[currentDigit]]);
-    runProg(prog, prog->inp[currentDigit] + 1);
-
-    printf("reg[3] = %ld\n", prog->regs[3]);
-    if (prog->regs[3] == 0) {
-      printf("HERE\n");
-      if (tryDigit(prog, currentDigit + 1, digits)) {
-        digits[currentDigit] = i;
-        return 1;
-      }
-    }
+    prog->input = inps;
+    apply(prog, prog->instrs[start]);
+    d = runProg(prog, start + 1);
+    for (int j = 0; j < 4; j++)
+      maybeAddOption(prog->regs[j], options[j], &option_s[j]);
   }
-  return 0;
+  return d;
 }
 
 int tryProg(Prog *prog, long *num) {
@@ -181,10 +169,13 @@ void print(long numbers[14]) {
 
 void part1(const char *inputLocation) {
   Prog p = parseProg(openFile(inputLocation));
-  long numbers[14] = {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9};
-  tryDigit(&p, 0, numbers);
+  long options[4][1024] = {{0}};
+  int option_s[4] = {0, 0, 0, 0};
+  doSegment(&p, 0, options, option_s);
+  printf("HERE\n");
+  printf("options %d %d %d %d = %d\n", option_s[0], option_s[1], option_s[2],
+         option_s[3], option_s[0] * option_s[1] * option_s[2] * option_s[3]);
   printf("part 1: ");
-  print(numbers);
 }
 
 void part2(const char *inputLocation) { printf("part 2: "); }
